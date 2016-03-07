@@ -1,8 +1,6 @@
 exports.name = "Status Code Matches";
 
-exports.run = function(core, response, data) {
-  var result = core.createTestResults();
-
+exports.run = function(result, response, data) {
   if(response.code === data) {
     result.passed = true;
   }

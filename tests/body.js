@@ -1,8 +1,6 @@
 exports.name = "Response Matches";
 
-exports.run = function(core, response, data) {
-  var result = core.createTestResults();
-
+exports.run = function(result, response, data) {
   if(typeof(response) === data) {
     result.passed = true;
   }

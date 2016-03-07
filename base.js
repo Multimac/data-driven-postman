@@ -175,7 +175,7 @@ var performTests = function(tests, completeTestData) {
       that test.
     */
     var runTest = function(test, testData) {
-      var results = test.run(core, response, testData);
+      var results = test.run(core.createTestResults(), response, testData);
       results.name = test.name; // Copy the test name for future use.
 
       return results;
