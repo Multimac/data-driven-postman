@@ -2,11 +2,13 @@
 var data = {
   test: {
     debug: undefined,
+    name: "Hello World",
+
     data: {
-      body : {
+      'body.js' : {
 
       },
-      code : 200
+      'code.js' : 200
     }
   }
 };
@@ -43,9 +45,23 @@ var defaultUndefined = function(value, def) {
   variable.
 */
 var firstDefinedOrDefault = function(values, def) {
-  values.reduceRight((prev, curr) => {
+  return values.reduceRight((prev, curr) => {
     return defaultUndefined(curr, prev);
   }, def);
+};
+
+/*
+  Logs a method call to the console for debugging purposes.
+*/
+var debugMethodCall = function(methodName, params) {
+  if(!debug)
+    return;
+
+  console.log(`Entering: ${methodName}`);
+  for (var p in params) {
+    if (params.hasOwnProperty(p))
+      console.log(`> ${p} === ${params[p]}`);
+  }
 };
 
 const fs = require("fs");
@@ -55,13 +71,15 @@ const fs = require("fs");
   Defining 'forceDebug' will override all settings in data files,
   environments and globals
 */
-const forceDebug = undefined;
+const forceDebug = true;
 const debug = firstDefinedOrDefault([
   forceDebug,
   data.test.debug,
   environment.debug,
   globals.debug
-])
+]);
+
+console.log(debug);
 
 const core = require("./core.js");
 
@@ -86,22 +104,19 @@ var response = {
   },
 
   getHeader: (name => postman.getResponseHeader(name))
-}
+};
 var testData = {
   iteration: iteration,
   request: request,
   response: response
-}
+};
 
 /*
   Returns an array of tests to run. Each is assumed to have
-  a 'run' method.
+  a 'run' method. Returns an array of all tests to be run.
 */
 var findTests = function(path) {
-  if(debug) {
-    console.log("findTests");
-    console.log(path);
-  }
+  debugMethodCall("findTests", { path: path });
 
   return fs.readdirSync(path)
     .map(filename => {
@@ -110,60 +125,97 @@ var findTests = function(path) {
         exports: testExports,
         filename: filename,
 
-        name: testExports.name,
+        name: defaultUndefined(testExports.name, filename),
         run: testExports.run
       };
     }).filter(test => {
       var validTest = test.exports.hasOwnProperty("run");
+
       if(!validTest)
         console.log(`'${test.filename}' is not a valid test`);
 
       return validTest;
     });
-}
+};
 
-var runTestChecks = function(tests, data) {
-  if(debug) {
-    console.log("runTestChecks");
-    console.log(tests);
-    console.log(data);
-  }
+/*
+  Mocks all tests for when we've either not got a data file or have run out of
+  tests in the given data file. Returns an array with a single element representing
+  the mocked test set.
+*/
+var mockTestChecks = function(tests) {
+  return [
+    {
+      messages: [],
+      passed: true,
 
-  var runTestSet = function(tests, data) {
-    var runTest = function(test, data) {
-      var results = test.run(core, response, data);
-      results.name = test.name;
+      tests: results.reduce((prev, test) => {
+        prev[test.name] = true;
+        return prev;
+      }, { })
+    }
+  ];
+};
+/*
+  Runs all tests against the response, passing in their given section of
+  data from the data file. A test file may contain multiple sets of tests for
+  different scenarios. Returns an array of the results from all sets.
+*/
+var runTestChecks = function(tests, completeTestData) {
+  debugMethodCall("runTestChecks", { tests: tests, completeTestData: completeTestData});
+
+  /*
+    Runs all tests using the given set of test data. Returns whether all
+    tests in the set passed, as well as whether the individual tests passed and
+    any messages from them.
+  */
+  var runTestSet = function(tests, setTestData) {
+    /*
+      Runs a single test using the data for that test. Returns the results of
+      that test.
+    */
+    var runTest = function(test, testData) {
+      var results = test.run(core, response, testData);
+      results.name = test.name; // Copy the test name for future use.
 
       return results;
     }
 
-    var results = tests.map(test => runTest(test, data));
+    var results = tests.map(
+      test => runTest(test, setTestData[test.filename])
+    );
 
     return {
-      passed: results.reduce((prev, test) => { return prev && test.passed; }, true),
-      tests: results.reduce((prev, test) => { prev[test.name] = test.passed; return prev; }, { }),
-      messages: results.reduce((prev, test) => { return prev.concat(test.messages) }, [ ])
+      messages: results.reduce((prev, test) => prev.concat(test.messages), [ ]),
+      passed: results.reduce((prev, test) => prev && test.passed, true),
+
+      tests: results.reduce((prev, test) => {
+        prev[test.name] = test.passed;
+        return prev;
+      }, { })
     };
   };
 
   var setResults = [ ];
-  if(Array.isArray(data)) {
-    data.forEach(function(d, i) {
-      var results = runTestSet(tests, d);
+  if(Array.isArray(completeTestData)) {
+    completeTestData.forEach((setTestData, i) => {
+      var results = runTestSet(tests, setTestData);
 
-      results.messages = results.messages.map(function(msg) {
-        return `Check ${i}: ${msg}`;
-      });
+      results.messages = results.messages.map(
+        msg => `Check ${i}: ${msg}`
+      );
 
       setResults.push(results);
     });
   }
   else {
-    setResults.push(runTestSet(tests, data));
+    setResults.push(runTestSet(tests, completeTestData));
   }
 
   return setResults;
 };
+
+
 var collateTestChecks = function(setResults) {
   if(debug) {
     console.log("collateTestChecks");
@@ -206,19 +258,21 @@ var submitTestResults = function(testResults) {
   }
 }
 
-var main = function(test) {
-  var data = { };
-  if(typeof(test) === "undefined") {
-    console.log("No test object provided, skipping tests.");
-  }
-  else {
-    console.log(`Iteration ${iteration}: ${test.name}`);
-
-    data = test.data;
-  }
+var main = function(testingData) {
+  debugMethodCall("main", { testingData: testingData });
 
   var tests = findTests(testDir);
-  var setResults = runTestChecks(tests);
+
+  var setResults = null;
+  if(testingData === undefined) {
+    console.log("No test object provided, mocking tests.");
+    setResults = mockTestChecks(tests);
+  }
+  else {
+    console.log(`Iteration ${iteration}: ${testingData.name}`);
+    setResults = runTestChecks(tests, testingData)
+  }
+
   var testResults = collateTestChecks(setResults);
 
   console.log(tests);
