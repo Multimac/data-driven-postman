@@ -38,7 +38,7 @@ var xml2Json = (xml => xml);
   Returns a default value when the given value is undefined.
 */
 var defaultUndefined = function(value, def) {
-  return (value === undefined) ? def : value;
+  return (value !== undefined ? value : def);
 };
 /*
   Returns the first defined variable in an array, or a default
@@ -196,10 +196,8 @@ var performTests = function(tests, completeTestData) {
     };
   };
 
-  /*
-    If we have an array, then we class each object in the array as a set
-    of tests, otherwise we class the object as a single set of tests.
-  */
+  // If we have an array, then we class each object in the array as a set
+  // of tests, otherwise we class the object as a single set of tests.
   var setResults = [ ];
   if(Array.isArray(completeTestData)) {
     completeTestData.forEach((setTestData, i) => {
@@ -219,33 +217,38 @@ var performTests = function(tests, completeTestData) {
   return setResults;
 };
 
-
+/*
+  Collates the results of all tests, returning the passing set if one exists or
+  a set made up of all the failed results and messages from all sets.
+*/
 var collateTestChecks = function(setResults) {
-  if(debug) {
-    console.log("collateTestChecks");
-    console.log(setResults);
-  }
+  debugMethodCall("collateTestChecks", { setResults: setResults });
 
-  var testResults = {
+  var passedSetResults = null;
+  var collatedSetResults = {
     passed: false,
     tests: { },
     messages: [ ]
   };
 
-  setResults.forEach(function(set) {
-    testResults.passed = testResults.passed || set.passed;
-    testResults.messages = testResults.messages.concat(set.messages);
+  // Attempt to find a successful set, otherwise just collate all the messages
+  // and failed tests.
+  setResults.forEach(set => {
+    if(set.passed)
+      passedSetResults = set;
+
+    if(passedSetResults != null)
+      return;
+
+    collatedSetResults.messages = collatedSetResults.messages.concat(set.messages);
 
     for(var k in set.tests) {
-      if(typeof(testResults.tests[k]) === "undefined") {
-        testResults.tests[k] = true;
-      }
-
-      testResults.tests[k] = testResults.tests[k] && set.tests[k];
+      if(!set.tests.hasOwnProperty(k))
+        collatedSetResults.tests[k] = collatedSetResults.tests[k] && set.tests[k];
     }
   });
 
-  return testResults;
+  return (passedSetResults !== null ? passedSetResults : collatedSetResults);
 };
 var submitTestResults = function(testResults) {
   if(debug) {
