@@ -161,7 +161,7 @@ var mockTestChecks = function(tests) {
   data from the data file. A test file may contain multiple sets of tests for
   different scenarios. Returns an array of the results from all sets.
 */
-var runTestChecks = function(tests, completeTestData) {
+var performTests = function(tests, completeTestData) {
   debugMethodCall("runTestChecks", { tests: tests, completeTestData: completeTestData});
 
   /*
@@ -196,6 +196,10 @@ var runTestChecks = function(tests, completeTestData) {
     };
   };
 
+  /*
+    If we have an array, then we class each object in the array as a set
+    of tests, otherwise we class the object as a single set of tests.
+  */
   var setResults = [ ];
   if(Array.isArray(completeTestData)) {
     completeTestData.forEach((setTestData, i) => {
@@ -270,7 +274,7 @@ var main = function(testingData) {
   }
   else {
     console.log(`Iteration ${iteration}: ${testingData.name}`);
-    setResults = runTestChecks(tests, testingData)
+    setResults = performTests(tests, testingData)
   }
 
   var testResults = collateTestChecks(setResults);
