@@ -1,31 +1,102 @@
+/* POSTMAN VARIABLES */
+var data = {
+  test: {
+    debug: undefined,
+    data: {
+      body : {
+
+      },
+      code : 200
+    }
+  }
+};
+var environment = { };
+var globals = { };
+var iteration = 0;
+var postman = {
+  getResponseHeader: (name => null)
+};
+var request = {
+  data: { },
+  headers: { },
+  method: "GET",
+  url: "http://localhost/test"
+};
+var responseCode = {
+  code: 200,
+  detail: "OK",
+  name: "OK"
+};
+var responseBody = "{ \"Hello\" : \"World\" }";
+var responseTime = 200;
+var tests = { };
+var xml2Json = (xml => xml);
+
+/*
+  Returns a default value when the given value is undefined.
+*/
+var defaultUndefined = function(value, def) {
+  return (value === undefined) ? def : value;
+};
+/*
+  Returns the first defined variable in an array, or a default
+  variable.
+*/
+var firstDefinedOrDefault = function(values, def) {
+  values.reduceRight((prev, curr) => {
+    return defaultUndefined(curr, prev);
+  }, def);
+};
+
 const fs = require("fs");
 
-// Set to true for more verbose logging
-var debug = false;
+/*
+  Whether or not to display debug messages while running tests.
+  Defining 'forceDebug' will override all settings in data files,
+  environments and globals
+*/
+const forceDebug = undefined;
+const debug = firstDefinedOrDefault([
+  forceDebug,
+  data.test.debug,
+  environment.debug,
+  globals.debug
+])
+
+const core = require("./core.js");
+
 var testDir = "./tests/";
-
-var core = require("./core.js");
-
-var data = { test: { } };
-var iteration = 0;
-var responseCode = { code: 200, name: "OK" };
-var responseTime = 200;
-var responseBody = "{ \"Hello\" : \"World\" }";
-var postman = { getResponseHeader: ((name) => null) };
-var tests = { }
 
 var response = {
   code: responseCode,
   time: responseTime,
 
   body: {
-    text: responseBody,
-    json: JSON.parse(responseBody)
+    raw: responseBody,
+
+    /* Attempt to parse the body as JSON to save repeated parsing. */
+    json: (function() {
+      try { return JSON.parse(responseBody); } catch (e) { }
+    }()),
+
+    /* Attempt to parse the body as XML to save repeated parsing. */
+    xml: (function() {
+      try { return xml2json(responseBody); } catch (e) { }
+    }())
   },
 
-  getHeader: ((name) => postman.getResponseHeader(name))
-};
+  getHeader: (name => postman.getResponseHeader(name))
+}
+var testData = {
+  iteration: iteration,
+  request: request,
+  response: response
+}
 
+/*
+  Returns an array of tests to run. Each is assumed to have
+  a 'run' method.
+*/
 var findTests = function(path) {
   if(debug) {
     console.log("findTests");
@@ -33,13 +104,29 @@ var findTests = function(path) {
   }
 
   return fs.readdirSync(path)
-    .map(filename => require(`${testDir}/${filename}`))
-    .filter(test => test.hasOwnProperty("run"));
+    .map(filename => {
+      var testExports = require(`${testDir}/${filename}`);
+      return {
+        exports: testExports,
+        filename: filename,
+
+        name: testExports.name,
+        run: testExports.run
+      };
+    }).filter(test => {
+      var validTest = test.exports.hasOwnProperty("run");
+      if(!validTest)
+        console.log(`'${test.filename}' is not a valid test`);
+
+      return validTest;
+    });
 }
+
 var runTestChecks = function(tests, data) {
   if(debug) {
     console.log("runTestChecks");
     console.log(tests);
+    console.log(data);
   }
 
   var runTestSet = function(tests, data) {
