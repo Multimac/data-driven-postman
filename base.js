@@ -250,11 +250,13 @@ var collateTestChecks = function(setResults) {
 
   return (passedSetResults !== null ? passedSetResults : collatedSetResults);
 };
+
+/*
+  Processes test results into the Postman tests object and logs messages if
+  the tests weren't successful.
+*/
 var submitTestResults = function(testResults) {
-  if(debug) {
-    console.log("submitTestResults");
-    console.log(testResults);
-  }
+  debugMethodCall("submitTestResults", { testResults: testResults });
 
   for (var k in testResults.tests) {
     tests[k] = testResults.tests[k] || testResults.passed;
@@ -265,6 +267,9 @@ var submitTestResults = function(testResults) {
   }
 }
 
+/*
+  Handles finding and running tests, and then submitting the results to Postman.
+*/
 var main = function(testingData) {
   debugMethodCall("main", { testingData: testingData });
 
@@ -281,10 +286,6 @@ var main = function(testingData) {
   }
 
   var testResults = collateTestChecks(setResults);
-
-  console.log(tests);
-  console.log(setResults);
-  console.log(testResults);
 
   submitTestResults(testResults);
 }
