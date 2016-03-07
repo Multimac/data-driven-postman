@@ -87,6 +87,10 @@ const core = require("./core.js");
 var testDir = "./tests/";
 
 var response = {
+/*
+  Build response and test data
+*/
+var responseData = {
   code: responseCode,
   time: responseTime,
 
@@ -106,10 +110,10 @@ var response = {
 
   getHeader: (name => postman.getResponseHeader(name))
 };
-var testData = {
+var postmanTestData = {
   iteration: iteration,
   request: request,
-  response: response
+  response: responseData
 };
 
 /*
@@ -176,7 +180,7 @@ var performTests = function(tests, completeTestData) {
       that test.
     */
     var runTest = function(test, testData) {
-      var results = test.run(core.createTestResults(), response, testData);
+      var results = test.run(core.createTestResults(), postmanTestData, testData);
       results.name = test.name; // Copy the test name for future use.
 
       return results;
@@ -283,7 +287,7 @@ var main = function(testingData) {
   }
   else {
     console.log(`Iteration ${iteration}: ${testingData.name}`);
-    setResults = performTests(tests, testingData)
+    setResults = performTests(tests, testingData.data)
   }
 
   var testResults = collateTestChecks(setResults);
