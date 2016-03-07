@@ -79,7 +79,8 @@ const debug = firstDefinedOrDefault([
   globals.debug
 ]);
 
-console.log(debug);
+if(debug)
+  console.log("Debugging is enabled...");
 
 const core = require("./core.js");
 
