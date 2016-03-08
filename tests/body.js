@@ -5,10 +5,10 @@ exports.run = function(result, response, data) {
     result.passed = true;
   }
   else if(typeof(response) !== typeof(data)) {
-    result.messages.push(`variable type does not match, ${response} !== ${data}`);
+    result.messages.push("variable type does not match, ${response} !== ${data}");
   }
   else if(Array.isArray(data) && response.length < data.length) {
-    result.messages.push(`array length does not match, ${response.length} < ${data.length}`);
+    result.messages.push("array length does not match, ${response.length} < ${data.length}");
   }
   else if(Array.isArray(data)) {
     result.passed = true;
@@ -22,7 +22,7 @@ exports.run = function(result, response, data) {
       result.passed = result.passed && checkResults.passed;
 
       checkResults.messages.forEach(function(msg, i) {
-        result.messages.push(`[${i}] => ${msg}`);
+        result.messages.push("[${i}] => ${msg}");
       });
     }
   }
@@ -43,12 +43,12 @@ exports.run = function(result, response, data) {
 
       // Combine messages
       checkResults.messages.forEach(function(msg, i) {
-        result.messages.push(`${index} => ${msg}`);
+        result.messages.push("${index} => ${msg}");
       });
     }
   }
   else if(response !== data) {
-    result.messages.push(`variable does not match, ${response} !== ${data}`);
+    result.messages.push("variable does not match, ${response} !== ${data}");
   }
   else {
     result.passed = true;

@@ -1,4 +1,24 @@
-/* POSTMAN VARIABLES */
+
+/*
+  A 'findTests' method will be prepended to this file when built, which
+  will return an array of all tests loaded from the ./tests/ directory.
+
+  The blank line above is important as that is where the method will be prepended
+  without a trailing newline.
+*/
+
+const core = require("./core.js");
+
+/*
+  Whether or not to display debug messages while running tests.
+  Defining 'forceDebug' will override all settings in data files,
+  environments and globals
+*/
+const forceDebug = true;
+
+/*
+  The below is for mocking a Postman environment for testing within NodeJS.
+*/
 var data = {
   test: {
     debug: undefined,
@@ -35,59 +55,6 @@ var tests = { };
 var xml2Json = (xml => xml);
 
 /*
-  Returns a default value when the given value is undefined.
-*/
-var defaultUndefined = function(value, def) {
-  return (value !== undefined ? value : def);
-};
-/*
-  Returns the first defined variable in an array, or a default
-  variable.
-*/
-var firstDefinedOrDefault = function(values, def) {
-  return values.reduceRight((prev, curr) => {
-    return defaultUndefined(curr, prev);
-  }, def);
-};
-
-/*
-  Logs a method call to the console for debugging purposes.
-*/
-var debugMethodCall = function(methodName, params) {
-  if(!debug)
-    return;
-
-  console.log(`Entering: ${methodName}`);
-  for (var p in params) {
-    if (params.hasOwnProperty(p))
-      console.log(`> ${p} === ${params[p]}`);
-  }
-};
-
-const fs = require("fs");
-
-/*
-  Whether or not to display debug messages while running tests.
-  Defining 'forceDebug' will override all settings in data files,
-  environments and globals
-*/
-const forceDebug = true;
-const debug = firstDefinedOrDefault([
-  forceDebug,
-  data.test.debug,
-  environment.debug,
-  globals.debug
-]);
-
-if(debug)
-  console.log("Debugging is enabled...");
-
-const core = require("./core.js");
-
-var testDir = "./tests/";
-
-var response = {
-/*
   Build response and test data
 */
 var responseData = {
@@ -117,30 +84,33 @@ var postmanTestData = {
 };
 
 /*
-  Returns an array of tests to run. Each is assumed to have
-  a 'run' method. Returns an array of all tests to be run.
+  Returns a default value when the given value is undefined.
 */
-var findTests = function(path) {
-  debugMethodCall("findTests", { path: path });
+var defaultUndefined = function(value, def) {
+  return (value !== undefined ? value : def);
+};
+/*
+  Returns the first defined variable in an array, or a default
+  variable.
+*/
+var firstDefinedOrDefault = function(values, def) {
+  return values.reduceRight((prev, curr) => {
+    return defaultUndefined(curr, prev);
+  }, def);
+};
 
-  return fs.readdirSync(path)
-    .map(filename => {
-      var testExports = require(`${testDir}/${filename}`);
-      return {
-        exports: testExports,
-        filename: filename,
+/*
+  Logs a method call to the console for debugging purposes.
+*/
+var debugMethodCall = function(methodName, params) {
+  if(!debug)
+    return;
 
-        name: defaultUndefined(testExports.name, filename),
-        run: testExports.run
-      };
-    }).filter(test => {
-      var validTest = test.exports.hasOwnProperty("run");
-
-      if(!validTest)
-        console.log(`'${test.filename}' is not a valid test`);
-
-      return validTest;
-    });
+  console.log(`Entering: ${methodName}`);
+  for (var p in params) {
+    if (params.hasOwnProperty(p))
+      console.log(`> ${p} === ${params[p]}`);
+  }
 };
 
 /*
@@ -167,7 +137,9 @@ var mockTestChecks = function(tests) {
   different scenarios. Returns an array of the results from all sets.
 */
 var performTests = function(tests, completeTestData) {
-  debugMethodCall("runTestChecks", { tests: tests, completeTestData: completeTestData});
+  if(debug) {
+    debugMethodCall("runTestChecks", { tests: tests, completeTestData: completeTestData});
+  }
 
   /*
     Runs all tests using the given set of test data. Returns whether all
@@ -227,7 +199,9 @@ var performTests = function(tests, completeTestData) {
   a set made up of all the failed results and messages from all sets.
 */
 var collateTestChecks = function(setResults) {
-  debugMethodCall("collateTestChecks", { setResults: setResults });
+  if(debug) {
+    debugMethodCall("collateTestChecks", { setResults: setResults });
+  }
 
   var passedSetResults = null;
   var collatedSetResults = {
@@ -261,7 +235,9 @@ var collateTestChecks = function(setResults) {
   the tests weren't successful.
 */
 var submitTestResults = function(testResults) {
-  debugMethodCall("submitTestResults", { testResults: testResults });
+  if(debug) {
+    debugMethodCall("submitTestResults", { testResults: testResults });
+  }
 
   for (var k in testResults.tests) {
     tests[k] = testResults.tests[k] || testResults.passed;
@@ -276,9 +252,11 @@ var submitTestResults = function(testResults) {
   Handles finding and running tests, and then submitting the results to Postman.
 */
 var main = function(testingData) {
-  debugMethodCall("main", { testingData: testingData });
+  if(debug) {
+    debugMethodCall("main", { testingData: testingData });
+  }
 
-  var tests = findTests(testDir);
+  var tests = findTests();
 
   var setResults = null;
   if(testingData === undefined) {
@@ -294,5 +272,18 @@ var main = function(testingData) {
 
   submitTestResults(testResults);
 }
+
+/*
+  Determine debugging status...
+*/
+const debug = firstDefinedOrDefault([
+  forceDebug,
+  data.test.debug,
+  environment.debug,
+  globals.debug
+]);
+
+if(debug)
+  console.log("Debugging is enabled...");
 
 main(data.test);
