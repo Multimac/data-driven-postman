@@ -1,0 +1,25 @@
+{
+  "name": "data-driven-postman",
+  "version": "0.1.0",
+  "description": "A series of scripts for running data-driven tests using Postman",
+  "main": "base.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Multimac/data-driven-postman.git"
+  },
+  "author": "David Symons",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Multimac/data-driven-postman/issues"
+  },
+  "homepage": "https://github.com/Multimac/data-driven-postman#readme",
+  "dependencies": {
+    "uglify-js": "^2.6.2"
+  }
+}
