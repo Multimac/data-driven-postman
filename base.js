@@ -7,8 +7,6 @@
   without a trailing newline.
 */
 
-const core = require("./core.js");
-
 /*
   Whether or not to display debug messages while running tests.
   Defining 'forceDebug' will override all settings in data files,
@@ -114,6 +112,16 @@ var debugMethodCall = function(methodName, params) {
 };
 
 /*
+  Creates a test results object.
+*/
+createTestResults = function() {
+  return {
+    passed: false,
+    messages: [ ]
+  }
+}
+
+/*
   Mocks all tests for when we've either not got a data file or have run out of
   tests in the given data file. Returns an array with a single element representing
   the mocked test set.
@@ -152,7 +160,7 @@ var performTests = function(tests, completeTestData) {
       that test.
     */
     var runTest = function(test, testData) {
-      var results = test.run(core.createTestResults(), postmanTestData, testData);
+      var results = test.run(createTestResults(), postmanTestData, testData);
       results.name = test.name; // Copy the test name for future use.
 
       return results;

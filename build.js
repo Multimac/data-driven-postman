@@ -3,8 +3,6 @@ const path = require("path");
 
 const uglify = require("uglify-js");
 
-const core = require("./core.js");
-
 var baseFile = "./base.js";
 var testDir = "./tests/";
 
@@ -18,11 +16,22 @@ var testJoin = ", ";
 var globalAppend = "] };";
 
 /*
+  Logs a method call to the console for debugging purposes.
+*/
+var debugMethodCall = function(methodName, params) {
+  console.log(`Entering: ${methodName}`);
+  for (var p in params) {
+    if (params.hasOwnProperty(p))
+      console.log(`> ${p} === ${params[p]}`);
+  }
+};
+
+/*
   Returns an array of tests to run. Each is assumed to have
   a 'run' method. Returns an array of all tests to be run.
 */
 var buildIndividualTestContents = function(path) {
-  core.debugMethodCall("buildTestContents", { path: path });
+  debugMethodCall("buildTestContents", { path: path });
 
   return fs.readdirSync(path)
     .map(filename => {
